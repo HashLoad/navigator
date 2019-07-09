@@ -77,8 +77,10 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
     property Stack: TStack < TPair < string, TFrame >> read FStack write FStack;
-    procedure Push(AFrame: TFrame); overload; deprecated 'Use method Push(AFrame: TFrameClass)';
-    procedure Push(ATitle: string; AFrame: TFrame); overload; deprecated 'Use method Push(AFrame: TFrameClass)';
+    procedure Push(AFrame: TFrame); overload;
+      deprecated 'Use method Push(AFrame: TFrameClass)';
+    procedure Push(ATitle: string; AFrame: TFrame); overload;
+      deprecated 'Use method Push(AFrame: TFrameClass)';
     procedure Push(ATitle: string; AFrame: TFrameClass); overload;
     procedure Push(AFrame: TFrameClass); overload;
     procedure Pop;
@@ -86,7 +88,8 @@ type
   published
     property OnSettingsClick: TNotifyEvent read FOnSettingsClick
       write FOnSettingsClick;
-    property OnGetFrameMainClass: TGetFrameMainClassEvent read FOnGetFrameMainClass write FOnGetFrameMainClass;
+    property OnGetFrameMainClass: TGetFrameMainClassEvent
+      read FOnGetFrameMainClass write FOnGetFrameMainClass;
     property VisibleSettings: Boolean read GetVisibleSettings
       write SetVisibleSettings default False;
     property MultiView: TMultiView read FMultiView write SetMultiView;
@@ -94,7 +97,7 @@ type
     property Title: string read GetTitle write SetTitle;
     property FontColor: TAlphaColor read FFontColor write SetFontColor
       default TAlphaColorRec.Black;
-    property ViewRender: TControl read GetViewRender write SetViewRender ;
+    property ViewRender: TControl read GetViewRender write SetViewRender;
   end;
 
 procedure Register;
@@ -126,7 +129,7 @@ constructor TNavigator.Create(AOwner: TComponent);
 begin
   inherited;
 
-  FStack := TStack<TPair<string,TFrame>>.Create;
+  FStack := TStack < TPair < string, TFrame >>.Create;
   CreateShadow;
   CreateRectangle;
   CreateButtons;
@@ -401,7 +404,7 @@ begin
       FStack.Push(TPair<string, TFrame>.Create(TitleNavigator, Frame));
       Title := TitleNavigator;
       Frame.Align := TAlignLayout.Client;
-
+      Frame.Name := Frame.Name + FStack.Count.ToString;
       Frame.Parent := FViewRender;
       Frame.DoShow;
     end);
