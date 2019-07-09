@@ -13,8 +13,8 @@ object SimpleMaster: TSimpleMaster
     Size.Height = 161.000000000000000000
     Size.PlatformDefault = False
     TabOrder = 0
-    Viewport.Width = 205.000000000000000000
-    Viewport.Height = 157.000000000000000000
+    Viewport.Width = 209.000000000000000000
+    Viewport.Height = 161.000000000000000000
   end
   object Button1: TButton
     Align = Top
