@@ -1,0 +1,28 @@
+{
+	"hash": "d41d8cd98f00b204e9800998ecf8427e",
+	"updated": "2019-07-08T22:50:16.886077-03:00",
+	"installedModules": {
+		"github.com/hashload/chronos": {
+			"name": "chronos",
+			"version": "1.0.4",
+			"hash": "382d7db3db68df73869505c794fd550f",
+			"artifacts": {
+				"bin": [],
+				"dcp": [
+					"Chronos.bpi",
+					"Chronos.dcp",
+					"Chronos.lib"
+				],
+				"dcu": [
+					"Atom.dcu",
+					"Storage.Chronos.dcu",
+					"TTLControl.dcu"
+				],
+				"bpl": [
+					"Chronos.bpl"
+				]
+			},
+			"failed": false
+		}
+	}
+}

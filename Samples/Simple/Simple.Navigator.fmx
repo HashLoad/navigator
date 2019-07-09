@@ -14,12 +14,13 @@ object SimpleNavigator: TSimpleNavigator
     Size.Height = 49.000000000000000000
     Size.PlatformDefault = False
     OnSettingsClick = NavigatorSettingsClick
-    OnGetMainFrame = NavigatorGetMainFrame
+    OnGetFrameMainClass = NavigatorGetFrameMainClass
     VisibleSettings = True
     MultiView = MultiView
     Fill.Color = xFF1675D1
     Title = 'Demo navigator'
     FontColor = claWhite
+    ViewRender = Owner
   end
   object MultiView: TMultiView
     Mode = Drawer
@@ -37,5 +38,9 @@ object SimpleNavigator: TSimpleNavigator
       Text = 'Logout'
       OnClick = Button1Click
     end
+  end
+  object Chronos: TChronos
+    Left = 160
+    Top = 152
   end
 end

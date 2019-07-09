@@ -25,4 +25,8 @@ object SimpleMaster: TSimpleMaster
     Text = 'Detail'
     OnClick = Button1Click
   end
+  object Chronos: TChronos
+    Left = 104
+    Top = 312
+  end
 end
