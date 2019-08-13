@@ -7,7 +7,6 @@
 			"version": "1.0.4",
 			"hash": "382d7db3db68df73869505c794fd550f",
 			"artifacts": {
-				"bin": [],
 				"dcp": [
 					"Chronos.bpi",
 					"Chronos.dcp",
@@ -22,7 +21,8 @@
 					"Chronos.bpl"
 				]
 			},
-			"failed": false
+			"failed": false,
+			"changed": false
 		}
 	}
 }

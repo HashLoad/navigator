@@ -22,6 +22,10 @@ type
 
   TNavigator = class(TLayout)
   private
+    FBackPath: TPath;
+    FSettingsPath: TPath;
+    FMenuPath: TPath;
+
     FOnSettingsClick: TNotifyEvent;
     FViewRender: TControl;
     FMultiView: TMultiView;
@@ -35,11 +39,8 @@ type
     FTitleFill: TFillRGBEffect;
     FMainTitle: string;
     FMenuButton: TSpeedButton;
-    FMenuButtonFill: TFillRGBEffect;
     FBackButton: TSpeedButton;
-    FBackButtonFill: TFillRGBEffect;
     FSettingsButton: TSpeedButton;
-    FSettingsButtonFill: TFillRGBEffect;
     FOnKeyUpOwner: TKeyEvent;
     FOnGetFrameMainClass: TGetFrameMainClassEvent;
     procedure FreeStack;
@@ -58,6 +59,7 @@ type
     procedure CreateButtons;
     procedure CreateRectangle;
     procedure CreateLabel;
+    procedure CreatePaths;
     procedure DoInjectKeyUp;
     procedure SetMainFrame(const Value: TFrame);
     function GetVisibleSettings: Boolean;
@@ -66,41 +68,39 @@ type
     function GetViewRender: TControl;
     property FrameMain: TFrame read FFrameMain write SetMainFrame;
     procedure DoOnGetFrameMainClass;
+    procedure DoAdjustStyle;
   protected
-    procedure Notification(AComponent: TComponent;
-      Operation: TOperation); override;
-    procedure OnFormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char;
-      Shift: TShiftState);
+    procedure Notification(AComponent: TComponent; Operation: TOperation); override;
+    procedure OnFormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
     procedure Loaded; override;
     function CreateFrameInstance(Frame: TFrameClass): TFrame;
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-    property Stack: TStack < TPair < string, TFrame >> read FStack write FStack;
-    procedure Push(AFrame: TFrame); overload;
-      deprecated 'Use method Push(AFrame: TFrameClass)';
-    procedure Push(ATitle: string; AFrame: TFrame); overload;
-      deprecated 'Use method Push(AFrame: TFrameClass)';
+    property Stack: TStack <TPair<string, TFrame>> read FStack write FStack;
+    procedure Push(AFrame: TFrame); overload; deprecated 'Use method Push(AFrame: TFrameClass)';
+    procedure Push(ATitle: string; AFrame: TFrame); overload; deprecated 'Use method Push(AFrame: TFrameClass)';
     procedure Push(ATitle: string; AFrame: TFrameClass); overload;
     procedure Push(AFrame: TFrameClass); overload;
     procedure Pop;
     procedure Clear;
   published
-    property OnSettingsClick: TNotifyEvent read FOnSettingsClick
-      write FOnSettingsClick;
-    property OnGetFrameMainClass: TGetFrameMainClassEvent
-      read FOnGetFrameMainClass write FOnGetFrameMainClass;
-    property VisibleSettings: Boolean read GetVisibleSettings
-      write SetVisibleSettings default False;
+    property OnSettingsClick: TNotifyEvent read FOnSettingsClick write FOnSettingsClick;
+    property OnGetFrameMainClass: TGetFrameMainClassEvent read FOnGetFrameMainClass write FOnGetFrameMainClass;
+    property VisibleSettings: Boolean read GetVisibleSettings write SetVisibleSettings default False;
     property MultiView: TMultiView read FMultiView write SetMultiView;
     property Fill: TBrush read GetFill write SetFill;
     property Title: string read GetTitle write SetTitle;
-    property FontColor: TAlphaColor read FFontColor write SetFontColor
-      default TAlphaColorRec.Black;
+    property FontColor: TAlphaColor read FFontColor write SetFontColor default TAlphaColorRec.Black;
     property ViewRender: TControl read GetViewRender write SetViewRender;
   end;
 
 procedure Register;
+const
+  BACK_BUTTON = 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z';
+  MENU_BUTTON = 'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z';
+  SETTINGS_BUTTON = 'M12,8 c1.1,0 2,-0.9 2,-2 s-0.9,-2 -2,-2 s-2,0.9 -2,2 s0.9,2 2,2 zm0,2 c-1.1,0 -2,0.9 -2,2 ' +
+    's0.9,2 2,2 s2,-0.9 2,-2 s-0.9,-2 -2,-2 zm0,6 c-1.1,0 -2,0.9 -2,2 s0.9,2 2,2 s2,-0.9 2,-2 s-0.9,-2 -2,-2 z';
 
 implementation
 
@@ -129,13 +129,15 @@ constructor TNavigator.Create(AOwner: TComponent);
 begin
   inherited;
 
-  FStack := TStack < TPair < string, TFrame >>.Create;
+  FStack := TStack <TPair<string, TFrame>>.Create;
   CreateShadow;
   CreateRectangle;
   CreateButtons;
   CreateLabel;
+  CreatePaths;
 
   DoInjectKeyUp;
+  DoAdjustStyle;
 
   Align := TAlignLayout.Top;
   Height := 56;
@@ -149,24 +151,18 @@ begin
   FMenuButton.Parent := FRectangle;
   FMenuButton.Align := TAlignLayout.Left;
   FMenuButton.Size.Width := FRectangle.Height;
-  FMenuButton.StyleLookup := 'drawertoolbutton';
   FMenuButton.OnClick := MenuButtonClick;
   FMenuButton.Stored := False;
   FMenuButton.SetSubComponent(True);
-  FMenuButtonFill := TFillRGBEffect.Create(FMenuButton);
-  FMenuButtonFill.Parent := FMenuButton;
 
   FBackButton := TSpeedButton.Create(Self);
   FBackButton.Parent := FRectangle;
   FBackButton.Align := TAlignLayout.Left;
   FBackButton.Size.Width := FRectangle.Height;
-  FBackButton.StyleLookup := 'backtoolbutton';
   FBackButton.Visible := False;
   FBackButton.OnClick := BackButtonClick;
   FBackButton.Stored := False;
   FBackButton.SetSubComponent(True);
-  FBackButtonFill := TFillRGBEffect.Create(FBackButton);
-  FBackButtonFill.Parent := FBackButton;
 
   FMultiViewButton := TSpeedButton.Create(Self);
   FMultiViewButton.Stored := False;
@@ -176,12 +172,9 @@ begin
   FSettingsButton.Parent := FRectangle;
   FSettingsButton.Align := TAlignLayout.Right;
   FSettingsButton.Size.Width := FRectangle.Height;
-  FSettingsButton.StyleLookup := 'detailstoolbutton';
   VisibleSettings := False;
   FSettingsButton.Stored := False;
   FSettingsButton.SetSubComponent(True);
-  FSettingsButtonFill := TFillRGBEffect.Create(FSettingsButton);
-  FSettingsButtonFill.Parent := FSettingsButton;
 end;
 
 function TNavigator.CreateFrameInstance(Frame: TFrameClass): TFrame;
@@ -286,8 +279,7 @@ begin
   Result := FStack.Count = 0;
 end;
 
-procedure TNavigator.Notification(AComponent: TComponent;
-  Operation: TOperation);
+procedure TNavigator.Notification(AComponent: TComponent; Operation: TOperation);
 begin
   inherited;
 
@@ -295,23 +287,19 @@ begin
     FMultiView := nil;
 end;
 
-procedure TNavigator.OnFormKeyUp(Sender: TObject; var Key: Word;
-  var KeyChar: Char; Shift: TShiftState);
+procedure TNavigator.OnFormKeyUp(Sender: TObject; var Key: Word; var KeyChar: Char; Shift: TShiftState);
 var
   LService: IFMXVirtualKeyboardService;
 begin
   if (Key = vkHardwareBack) and not StackIsEmpty then
-  begin
-    TPlatformServices.Current.SupportsPlatformService
-      (IFMXVirtualKeyboardService, IInterface(LService));
-    if Not((LService <> nil) and (TVirtualKeyboardState.Visible
-      in LService.VirtualKeyBoardState)) then
-      Pop
-    else if (TVirtualKeyboardState.Visible in LService.VirtualKeyBoardState)
-    then
-      LService.HideVirtualKeyboard;
-    Key := 0;
-  end;
+    begin
+      TPlatformServices.Current.SupportsPlatformService(IFMXVirtualKeyboardService, IInterface(LService));
+      if Not((LService <> nil) and (TVirtualKeyboardState.Visible in LService.VirtualKeyBoardState)) then
+        Pop
+      else if (TVirtualKeyboardState.Visible in LService.VirtualKeyBoardState) then
+        LService.HideVirtualKeyboard;
+      Key := 0;
+    end;
 
   if Assigned(FOnKeyUpOwner) then
     FOnKeyUpOwner(Sender, Key, KeyChar, Shift);
@@ -333,20 +321,20 @@ begin
       FreeAndNil(LFrame);
 
       if StackIsEmpty then
-      begin
-        FMenuButton.Visible := True;
-        FBackButton.Visible := False;
+        begin
+          FMenuButton.Visible := True;
+          FBackButton.Visible := False;
 
-        Title := FMainTitle;
+          Title := FMainTitle;
 
-        if Assigned(FFrameMain) then
-          FFrameMain.Parent := FViewRender;
-      end
+          if Assigned(FFrameMain) then
+            FFrameMain.Parent := FViewRender;
+        end
       else
-      begin
-        FStack.Peek.Value.Parent := FViewRender;
-        Title := FStack.Peek.Key;
-      end;
+        begin
+          FStack.Peek.Value.Parent := FViewRender;
+          Title := FStack.Peek.Key;
+        end;
     end);
 end;
 
@@ -358,18 +346,30 @@ begin
   DoPush(ATitle, LFrame);
 end;
 
+procedure TNavigator.DoAdjustStyle;
+begin
+  {$IFDEF MSWINDOWS}
+    FTitle.StyledSettings :=  [];
+    FTitle.Font.Size := 16;
+    FTitle.Font.Style := [TFontStyle.fsBold];
+    FTitle.Font.Family := 'Roboto';
+  {$ENDIF}
+//  FMenuButton.StyleLookup := 'drawertoolbutton';
+//  FSettingsButton.StyleLookup := 'detailstoolbutton';
+end;
+
 procedure TNavigator.DoInjectKeyUp;
 begin
   if Owner.InheritsFrom(TCommonCustomForm) then
-  begin
-    FOnKeyUpOwner := TCommonCustomForm(Owner).OnKeyUp;
-    TCommonCustomForm(Owner).OnKeyUp := OnFormKeyUp;
-  end
+    begin
+      FOnKeyUpOwner := TCommonCustomForm(Owner).OnKeyUp;
+      TCommonCustomForm(Owner).OnKeyUp := OnFormKeyUp;
+    end
   else if Owner.InheritsFrom(TControl) then
-  begin
-    FOnKeyUpOwner := TControl(Owner).OnKeyUp;
-    TControl(Owner).OnKeyUp := OnFormKeyUp;
-  end;
+    begin
+      FOnKeyUpOwner := TControl(Owner).OnKeyUp;
+      TControl(Owner).OnKeyUp := OnFormKeyUp;
+    end;
 end;
 
 procedure TNavigator.DoOnGetFrameMainClass;
@@ -377,10 +377,10 @@ var
   LFrameMainClass: TFrameClass;
 begin
   if not(csDesigning in ComponentState) and Assigned(FOnGetFrameMainClass) then
-  begin
-    FOnGetFrameMainClass(LFrameMainClass);
-    FrameMain := CreateFrameInstance(LFrameMainClass);
-  end;
+    begin
+      FOnGetFrameMainClass(LFrameMainClass);
+      FrameMain := CreateFrameInstance(LFrameMainClass);
+    end;
 end;
 
 procedure TNavigator.DoPush(TitleNavigator: string; Frame: TFrame);
@@ -389,15 +389,15 @@ begin
     procedure
     begin
       if StackIsEmpty then
-      begin
-        FMenuButton.Visible := False;
-        FBackButton.Visible := True;
+        begin
+          FMenuButton.Visible := False;
+          FBackButton.Visible := True;
 
-        FMainTitle := Title;
+          FMainTitle := Title;
 
-        if Assigned(FFrameMain) then
-          FFrameMain.Parent := nil;
-      end
+          if Assigned(FFrameMain) then
+            FFrameMain.Parent := nil;
+        end
       else
         FStack.Peek.Value.Parent := nil;
 
@@ -410,17 +410,50 @@ begin
     end);
 end;
 
+procedure TNavigator.CreatePaths;
+const
+  PATH_SIZE = 18;
+
+  procedure MakePath(var APath: TPath; AData: string; AParent: TFmxObject);
+  begin
+    APath := TPath.Create(AParent);
+    APath.Parent := AParent;
+    APath.SetSubComponent(True);
+    APath.Stored := False;
+    APath.HitTest := False;
+
+    APath.Width := PATH_SIZE;
+    APath.Height := PATH_SIZE;
+
+    APath.Data.Data := AData;
+    APath.Align := TAlignLayout.Center;
+    APath.Fill.Color := FontColor;
+    APath.Stroke.Kind := TBrushKind.None;
+
+    APath.Padding.Left := -PATH_SIZE;
+    APath.Padding.Right := -PATH_SIZE;
+    APath.Padding.Top := -PATH_SIZE;
+    APath.Padding.Bottom := -PATH_SIZE;
+    APath.WrapMode := TPathWrapMode.Fit;
+
+  end;
+begin
+  MakePath(FBackPath, BACK_BUTTON, FBackButton);
+  MakePath(FMenuPath, MENU_BUTTON, FMenuButton);
+  MakePath(FSettingsPath, SETTINGS_BUTTON, FSettingsButton);
+end;
+
 procedure TNavigator.FreeStack;
 var
   LPairFrame: TPair<string, TFrame>;
   LFrame: TFrame;
 begin
   while FStack.Count > 0 do
-  begin
-    LPairFrame := FStack.Pop;
-    LFrame := LPairFrame.Value;
-    LFrame.Parent := nil;
-  end;
+    begin
+      LPairFrame := FStack.Pop;
+      LFrame := LPairFrame.Value;
+      LFrame.Parent := nil;
+    end;
   FreeAndNil(FStack);
 end;
 
@@ -442,49 +475,50 @@ end;
 procedure TNavigator.SetFontColor(const Value: TAlphaColor);
 begin
   if FFontColor <> Value then
-  begin
-    FFontColor := Value;
-    FTitleFill.Color := Value;
-    FBackButtonFill.Color := Value;
-    FSettingsButtonFill.Color := Value;
-    FMenuButtonFill.Color := Value;
-  end;
+    begin
+      FFontColor := Value;
+      FTitleFill.Color := Value;
+
+      FBackPath.Fill.Color := Value;
+      FSettingsPath.Fill.Color := Value;
+      FMenuPath.Fill.Color := Value;
+    end;
 end;
 
 procedure TNavigator.SetMainFrame(const Value: TFrame);
 begin
   if FFrameMain <> Value then
-  begin
-    if Assigned(FFrameMain) then
     begin
-      RemoveFreeNotification(FFrameMain);
-      FFrameMain.DisposeOf;
-    end;
+      if Assigned(FFrameMain) then
+        begin
+          RemoveFreeNotification(FFrameMain);
+          FFrameMain.DisposeOf;
+        end;
 
-    FFrameMain := Value;
+      FFrameMain := Value;
 
-    if FFrameMain <> nil then
-    begin
-      AddFreeNotify(FFrameMain);
-      FFrameMain.Align := TAlignLayout.Client;
-      FFrameMain.Parent := FViewRender;
+      if FFrameMain <> nil then
+        begin
+          AddFreeNotify(FFrameMain);
+          FFrameMain.Align := TAlignLayout.Client;
+          FFrameMain.Parent := FViewRender;
+        end;
     end;
-  end;
 end;
 
 procedure TNavigator.SetMultiView(const Value: TMultiView);
 begin
   if FMultiView <> Value then
-  begin
-    FMultiView := Value;
-
-    if HasMultiView then
     begin
-      FMultiView.AddFreeNotify(Self);
-      FMultiView.MasterButton := FMultiViewButton;
-      FMenuButton.Visible := True;
+      FMultiView := Value;
+
+      if HasMultiView then
+        begin
+          FMultiView.AddFreeNotify(Self);
+          FMultiView.MasterButton := FMultiViewButton;
+          FMenuButton.Visible := True;
+        end;
     end;
-  end;
 end;
 
 procedure TNavigator.SetTitle(const Value: string);
@@ -496,17 +530,17 @@ end;
 procedure TNavigator.SetViewRender(const Value: TControl);
 begin
   if FViewRender <> Value then
-  begin
-    FViewRender := Value;
-  end;
+    begin
+      FViewRender := Value;
+    end;
 end;
 
 procedure TNavigator.SetVisibleSettings(const Value: Boolean);
 begin
   if FSettingsButton.Visible <> Value then
-  begin
-    FSettingsButton.Visible := Value
-  end;
+    begin
+      FSettingsButton.Visible := Value
+    end;
 end;
 
 procedure TNavigator.Push(AFrame: TFrameClass);
