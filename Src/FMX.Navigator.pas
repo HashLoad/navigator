@@ -334,6 +334,7 @@ begin
         begin
           FStack.Peek.Value.Parent := FViewRender;
           Title := FStack.Peek.Key;
+          FStack.Peek.Value.DoShow;
         end;
     end);
 end;
